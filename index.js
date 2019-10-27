@@ -2,8 +2,6 @@ const fs = require('fs');
 const { promisify } = require('util');
 const readFile = promisify(fs.readFile);
 
-const prefixPattern = /(เขต|แขวง|จังหวัด|อำเภอ|ตำบล|อ\.|ต\.|จ\.)/g;
-
 const split = async (text) => {
     try {
         console.log('input text:', text);
@@ -11,13 +9,14 @@ const split = async (text) => {
         const wordlist = createWordlist(cleanText).filter(word => word.length > 3);
         const mainAddress = await findSubdistrict(wordlist);
         const result = finalResult(cleanText, mainAddress);
-        console.log('result :', result)
+        console.log('address :', result)
     } catch (error) {
         console.error(error);
     }
 };
 
 const removePrefix = (text) => {
+    const prefixPattern = /(เขต|แขวง|จังหวัด|อำเภอ|ตำบล|อ\.|ต\.|จ\.)/g;
     let string = text.replace(/\s+/g, ' ');
     string = string.replace(prefixPattern, '');
     return string;
@@ -54,6 +53,8 @@ const finalResult = (text, mainAddress) => {
     remainingTxt = remainingTxt.replace(phone, '').trim();
     phone = phone.replace(/-/g, '');
 
+    remainingTxt = remainingTxt.replace('()', '').trim();
+
     const address = remainingTxt.replace(/\s+/g, ' ').trim();
 
     return {
@@ -82,8 +83,8 @@ const findSubdistrict = async (wordlist) => {
 
     return {
         subdistrict: bestMatched[0],
-        district: bestMatched[1].replace(prefixPattern, ''),
-        province: bestMatched[2].replace(prefixPattern, ''),
+        district: removePrefix(bestMatched[1]),
+        province: removePrefix(bestMatched[2]),
         zipcode: bestMatched[3]
     };
 };
