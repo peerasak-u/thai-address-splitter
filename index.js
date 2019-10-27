@@ -6,10 +6,10 @@ const split = async (text) => {
     try {
         console.log('input text:', text);
         const cleanText = removePrefix(text);
-        const wordlist = createWordlist(cleanText).filter(word => word.length > 3);
+        const wordlist = cleanText.split(' ').filter(word => word.length >= 3);
         const mainAddress = await findSubdistrict(wordlist);
         const result = finalResult(cleanText, mainAddress);
-        console.log('address :', result)
+        return result;
     } catch (error) {
         console.error(error);
     }
@@ -22,10 +22,6 @@ const removePrefix = (text) => {
     return string;
 }
 
-const createWordlist = (string) => {
-    const wordlist = string.split(' ');
-    return wordlist;
-};
 
 const finalResult = (text, mainAddress) => {
     const namePattern = /(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|นางสาว|น\.ส\.|ดร\.)([ก-๙]+\s[ก-๙]+)/;
@@ -78,8 +74,7 @@ const findSubdistrict = async (wordlist) => {
         results = results.concat(filtered);
     }
 
-    const matches = results.map(item => item.name);
-    const bestMatched = findBestMatched(matches).name.split(', ');
+    const bestMatched = findBestMatched(results).name.split(', ');
 
     return {
         subdistrict: bestMatched[0],
@@ -89,19 +84,20 @@ const findSubdistrict = async (wordlist) => {
     };
 };
 
-const findBestMatched = (matches) => {
-    let group = {};
+const findBestMatched = (filtered) => {
+    let results = [];
 
-    matches.forEach((i) => {
-        group[i] = (group[i] || 0) + 1;
-    });
-
-    let results = Object.keys(group).map(key => {
-        return {
-            name: key,
-            count: group[key]
+    filtered.reduce((res, value) => {
+        if (!res[value.name]) {
+            res[value.name] = {
+                count: 0,
+                name: value.name
+            };
+            results.push(res[value.name])
         }
-    });
+        res[value.name].count += 1
+        return res;
+    }, {});
 
     return results.sort((a, b) => {
         if (a.count > b.count) {
@@ -114,11 +110,16 @@ const findBestMatched = (matches) => {
     })[0];
 }
 
-const arguments = process.argv;
-if (arguments.length > 2) {
-    const input = arguments.slice(2)[0];
-    split(input);
-} else {
-    console.log('no input');
-}
+(async () => {
+    console.time('execution time');
+    const arguments = process.argv;
+    if (arguments.length > 2) {
+        const input = arguments.slice(2)[0];
+        const result = await split(input);
+        console.log('result :', result);
+        console.timeEnd('execution time')
+    } else {
+        console.log('no input');
+    }
+})();
 
