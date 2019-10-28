@@ -1,10 +1,12 @@
 const fs = require('fs');
 const { promisify } = require('util');
 const readFile = promisify(fs.readFile);
+let subdistricts = [];
 
 const split = async (text) => {
     try {
-        console.log('input text:', text);
+        const content = await readFile('subdistricts.json', 'utf-8');
+        subdistricts = JSON.parse(content);
         const cleanText = removePrefix(text);
         const wordlist = cleanText.split(' ').filter(word => word.length >= 3);
         const mainAddress = await findSubdistrict(wordlist);
@@ -63,8 +65,6 @@ const finalResult = (text, mainAddress) => {
 }
 
 const findSubdistrict = async (wordlist) => {
-    const content = await readFile('subdistricts.json', 'utf-8');
-    const subdistricts = JSON.parse(content);
     let results = [];
 
     for (let word of wordlist) {
@@ -99,7 +99,7 @@ const findBestMatched = (filtered) => {
         return res;
     }, {});
 
-    return results.sort((a, b) => {
+    const firstMatch = results.sort((a, b) => {
         if (a.count > b.count) {
             return -1;
         }
@@ -108,18 +108,12 @@ const findBestMatched = (filtered) => {
         }
         return 0;
     })[0];
+
+    if (firstMatch.count === 1) {
+        throw new Error('No Match Found');
+    }
+
+    return firstMatch;
 }
 
-(async () => {
-    console.time('execution time');
-    const arguments = process.argv;
-    if (arguments.length > 2) {
-        const input = arguments.slice(2)[0];
-        const result = await split(input);
-        console.log('result :', result);
-        console.timeEnd('execution time')
-    } else {
-        console.log('no input');
-    }
-})();
-
+module.exports.split = split

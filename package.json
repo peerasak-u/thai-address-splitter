@@ -4,8 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node index"
+    "test": "mocha"
   },
   "author": "Peerasak Unsakon <clonezer@gmail.com>",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "mocha": "^6.2.2"
+  }
 }
