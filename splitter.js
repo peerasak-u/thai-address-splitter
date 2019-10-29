@@ -8,8 +8,8 @@ const split = async (text) => {
         const content = await readFile('subdistricts.json', 'utf-8');
         subdistricts = JSON.parse(content);
         const cleanText = removePrefix(text);
-        const wordlist = cleanText.split(' ').filter(word => word.length >= 3);
-        const mainAddress = await findSubdistrict(wordlist);
+        const wordlist = cleanText.split(' ').filter(word => /[ก-๙]{2,}/.test(word));
+        const mainAddress = findSubdistrict(wordlist);
         const result = finalResult(cleanText, mainAddress);
         return result;
     } catch (error) {
@@ -17,8 +17,25 @@ const split = async (text) => {
     }
 };
 
+const splits = async (texts) => {
+    try {
+        const content = await readFile('subdistricts.json', 'utf-8');
+        subdistricts = JSON.parse(content);
+        const results = texts.map(text => {
+            const cleanText = removePrefix(text);
+            const wordlist = cleanText.split(' ').filter(word => /[ก-๙]{2,}/.test(word));
+            const mainAddress = findSubdistrict(wordlist);
+            const result = finalResult(cleanText, mainAddress);
+            return result;
+        });
+        return results;
+    } catch (error) {
+        console.error(error);
+    }
+}
+
 const removePrefix = (text) => {
-    const prefixPattern = /(เขต|แขวง|จังหวัด|อำเภอ|ตำบล|อ\.|ต\.|จ\.)/g;
+    const prefixPattern = /(เขต|แขวง|จังหวัด|อำเภอ|ตำบล|อ\.|ต\.|จ\.|โทร\.?|เบอร์)/g;
     let string = text.replace(/\s+/g, ' ');
     string = string.replace(prefixPattern, '');
     return string;
@@ -26,8 +43,8 @@ const removePrefix = (text) => {
 
 
 const finalResult = (text, mainAddress) => {
-    const namePattern = /(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|นางสาว|น\.ส\.|ดร\.)([ก-๙]+\s[ก-๙]+)/;
-    const phonePattern = /(08\d{1}-\d{3}-\d{4}|08\d{1}-\d{7}|08\d{8})/;
+    const namePattern = /(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|นางสาว|น\.ส\.|ดร\.|คุณ)([ก-๙]+\s[ก-๙]+)/;
+    const phonePattern = /((09|08|06)\d{1}-\d{3}-\d{4}|(09|08|06)\d{1}-\d{7}|(08|09|06)\d{8})/;
 
     let remainingTxt = text;
 
@@ -64,7 +81,7 @@ const finalResult = (text, mainAddress) => {
 
 }
 
-const findSubdistrict = async (wordlist) => {
+const findSubdistrict = (wordlist) => {
     let results = [];
 
     for (let word of wordlist) {
@@ -116,4 +133,7 @@ const findBestMatched = (filtered) => {
     return firstMatch;
 }
 
-module.exports.split = split
+module.exports = {
+    split,
+    splits
+}
