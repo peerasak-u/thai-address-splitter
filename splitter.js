@@ -43,7 +43,7 @@ const removePrefix = (text) => {
 
 
 const finalResult = (text, mainAddress) => {
-    const namePattern = /(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|นางสาว|น\.ส\.|ดร\.|คุณ)([ก-๙]+\s[ก-๙]+)/;
+    const namePattern = /(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|นางสาว|น\.ส\.|ดร\.|คุณ)([ก-๙]+\s[ก-๙]+(\sณ\s[ก-๙]+)?)/;
     const phonePattern = /((09|08|06)\d{1}-\d{3}-\d{4}|(09|08|06)\d{1}-\d{7}|(08|09|06)\d{8})/;
 
     let remainingTxt = text;
