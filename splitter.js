@@ -1,12 +1,7 @@
-const fs = require('fs');
-const { promisify } = require('util');
-const readFile = promisify(fs.readFile);
-let subdistricts = [];
+let subdistricts = require('./subdistricts.json')
 
 const split = async (text) => {
     try {
-        const content = await readFile('subdistricts.json', 'utf-8');
-        subdistricts = JSON.parse(content);
         const cleanText = removePrefix(text);
         const wordlist = cleanText.split(' ').filter(word => /[ก-๙]{2,}/.test(word));
         const mainAddress = findSubdistrict(wordlist);
@@ -19,8 +14,6 @@ const split = async (text) => {
 
 const splits = async (texts) => {
     try {
-        const content = await readFile('subdistricts.json', 'utf-8');
-        subdistricts = JSON.parse(content);
         const results = texts.map(text => {
             const cleanText = removePrefix(text);
             const wordlist = cleanText.split(' ').filter(word => /[ก-๙]{2,}/.test(word));

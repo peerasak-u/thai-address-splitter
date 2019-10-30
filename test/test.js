@@ -4,7 +4,7 @@ const Splitter = require('../splitter');
 const input1 = 'นายดราก้อน ตันเด้อ   อาคารเอ ชั้น  10    (081-234-5678) ห้อง 3  เขตพญาไท กรุงเทพมหานคร แขวงสามเสนใน 10400';
 const input2 = 'คุณสวยมาก พรหมสาแขน ณ หนองหาร 12 หมู่ 1 บ้านดงเต่า ตำบลเต่างอย อำเภอเต่างอย  สกลนคร เบอร์ 081-999-2220';
 
-describe('Basic', async () => {
+describe('ปกติ', async () => {
     describe('#name', () => {
         it('should be "นายดราก้อน ตันเด้อ"', async () => {
             const result = await Splitter.split(input1);
@@ -50,7 +50,7 @@ describe('Basic', async () => {
     });
 });
 
-describe('lastname with space / No Zipcode', async () => {
+describe('นามสกุล มี "ณ" และไม่ใส่ zipcode ', async () => {
     describe('#name', () => {
         it('should be "คุณสวยมาก พรหมสาแขน ณ หนองหาร"', async () => {
             const result = await Splitter.split(input2);
