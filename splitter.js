@@ -28,7 +28,7 @@ const splits = async (texts) => {
 }
 
 const removePrefix = (text) => {
-    const prefixPattern = /(เขต|แขวง|จังหวัด|อำเภอ|ตำบล|อ\.|ต\.|จ\.|โทร\.?|เบอร์)/g;
+    const prefixPattern = /(เขต|แขวง|จังหวัด|อำเภอ|ตำบล|อ\.|ต\.|จ\.|โทร\.?|เบอร์|ที่อยู่)/g;
     let string = text.replace(/\s+/g, ' ');
     string = string.replace(prefixPattern, '');
     return string;
@@ -37,7 +37,7 @@ const removePrefix = (text) => {
 
 const finalResult = (text, mainAddress) => {
     const namePattern = /(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|นางสาว|น\.ส\.|ดร\.|คุณ)([ก-๙]+\s[ก-๙]+(\sณ\s[ก-๙]+)?)/;
-    const phonePattern = /((09|08|06)\d{1}-\d{3}-\d{4}|(09|08|06)\d{1}-\d{7}|(08|09|06)\d{8})/;
+    const phonePattern = /(09|08|06)\d{1}(-\d{3}-\d{4}|\d{1}-\d{7}|\d{8})/;
 
     let remainingTxt = text;
 
