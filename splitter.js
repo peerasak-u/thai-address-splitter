@@ -1,6 +1,6 @@
 let subdistricts = require('./subdistricts.json')
 
-const split = async (text) => {
+const split = (text) => {
     try {
         const cleanText = removePrefix(text);
         const wordlist = cleanText.split(' ').filter(word => /[ก-๙]{2,}/.test(word));
@@ -12,7 +12,7 @@ const split = async (text) => {
     }
 };
 
-const splits = async (texts) => {
+const splits = (texts) => {
     try {
         const results = texts.map(text => {
             const cleanText = removePrefix(text);
