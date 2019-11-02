@@ -1,7 +1,7 @@
 const Splitter = require('../splitter');
 
 (async () => {
-    const input = "ดอกฝ้าย สายเขียว 799/11 ถนนจักรแก้ว แขวงวังบูรพาภิรมย์ เขตพระนคร  กรุงเทพ 10200 เบอร์ 0911222333";
+    const input = "คุณเบญจมาภรณ์ แสนเมือง 87/216 ช9 หมู่บ้านพฤกษานารา เหมือง เมืองชลบุรี ชลบุรี 20130  = 0631963129";
     const result = Splitter.split(input);
     console.log('result :', { input, result });
 })();
