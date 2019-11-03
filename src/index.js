@@ -3,7 +3,8 @@ let subdistricts = require('./subdistricts.json')
 const split = (text) => {
     try {
         const cleanText = removePrefix(text);
-        const wordlist = cleanText.split(' ').filter(word => /[ก-๙]{2,}/.test(word));
+        let wordlist = cleanText.split(' ').filter(word => /[ก-๙]{2,}/.test(word));
+        wordlist = [...new Set(wordlist)];
         const mainAddress = findSubdistrict(wordlist);
         const result = finalResult(cleanText, mainAddress);
         return result;
@@ -11,21 +12,6 @@ const split = (text) => {
         console.error(error);
     }
 };
-
-const splits = (texts) => {
-    try {
-        const results = texts.map(text => {
-            const cleanText = removePrefix(text);
-            const wordlist = cleanText.split(' ').filter(word => /[ก-๙]{2,}/.test(word));
-            const mainAddress = findSubdistrict(wordlist);
-            const result = finalResult(cleanText, mainAddress);
-            return result;
-        });
-        return results;
-    } catch (error) {
-        console.error(error);
-    }
-}
 
 const removePrefix = (text) => {
     const prefixPattern = /(เขต|แขวง|จังหวัด|อำเภอ|ตำบล|อ\.|ต\.|จ\.|โทร\.?|เบอร์|ที่อยู่)/g;
@@ -127,6 +113,5 @@ const findBestMatched = (filtered) => {
 }
 
 module.exports = {
-    split,
-    splits
+    split
 }

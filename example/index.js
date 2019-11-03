@@ -1,7 +1,9 @@
-const Splitter = require('../splitter');
+const Splitter = require('../src');
 
-(async () => {
-    const input = "คุณเบญจมาภรณ์ แสนเมือง 87/216 ช9 หมู่บ้านพฤกษานารา เหมือง เมืองชลบุรี ชลบุรี 20130  = 0631963129";
+(() => {
+    const input = 'นายดราก้อน ตันเด้อ   อาคารเอ ชั้น  10    (081-234-5678) ห้อง 3  เขตพญาไท กรุงเทพมหานคร แขวงสามเสนใน 10400';
+    console.time('execution time')
     const result = Splitter.split(input);
     console.log('result :', { input, result });
+    console.timeEnd('execution time')
 })();
