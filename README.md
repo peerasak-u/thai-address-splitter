@@ -1,5 +1,7 @@
 # Thai Address Splitter
 
+split long address string(in Thai) to 'name', 'phone number', 'subdistrict', 'district', 'province', 'zipcode'
+
 ## Example
 
 basic split
