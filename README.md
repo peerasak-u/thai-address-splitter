@@ -17,7 +17,7 @@ const Splitter = require('../splitter');
 
 ## Tests
 ```
-npm run test
+pnpm run test
 ```
 
 ## Know issues
