@@ -33,6 +33,29 @@ const removeLastOccurrence = (text, searchValue) => {
     return text.slice(0, lastIndex) + text.slice(lastIndex + searchValue.length);
 };
 
+// Common Thai address keywords that indicate start of address
+const addressKeywords = [
+    'อาคาร', 'ชั้น', 'ห้อง', 'ตึก', 'หมู่', 'บ้าน', 'ซอย', 'ถนน',
+    'ตลาด', 'คอนโด', 'คอนโดมิเนียม', 'อพาร์ทเม้นท์', 'หอพัก', 'โครงการ',
+    'เลขที่', 'บ้านเลขที่', 'หมู่บ้าน', 'ซ.', 'ถ.'
+];
+
+// Pattern to detect address components
+const addressStartPattern = new RegExp(
+    `(^|\\s)(${addressKeywords.join('|')}|\\d+/\\d+|\\d+\\s*หมู่\\s*\\d+|\\d+\\s+ถนน)`,
+    'i'
+);
+
+// Helper function to find where address starts in text
+const findAddressStart = (text) => {
+    const match = text.match(addressStartPattern);
+    if (match) {
+        // If match starts with whitespace, adjust index to after the whitespace
+        return match.index + (match[0].startsWith(' ') ? 1 : 0);
+    }
+    return -1;
+};
+
 const removeProvinceAbbreviations = (text, fullProvinceName) => {
     let result = text;
     
@@ -70,13 +93,7 @@ const finalResult = (text, mainAddress) => {
     remainingTxt = removeLastOccurrence(remainingTxt, mainAddress.district).trim();
     remainingTxt = removeLastOccurrence(remainingTxt, mainAddress.subdistrict).trim();
 
-    const nameMatched = remainingTxt.match(namePattern);
-    let name = '';
-    if (nameMatched) {
-        [name] = nameMatched
-    }
-    remainingTxt = remainingTxt.replace(name, '').trim();
-
+    // Extract phone first to simplify name extraction
     const phoneMatched = remainingTxt.match(phonePattern);
     let phone = '';
     if (phoneMatched) {
@@ -85,6 +102,28 @@ const finalResult = (text, mainAddress) => {
     remainingTxt = remainingTxt.replace(phone, '').trim();
     phone = phone.replace(/-/g, '');
 
+    // Try to extract name with title prefix first
+    const nameMatched = remainingTxt.match(namePattern);
+    let name = '';
+    if (nameMatched) {
+        [name] = nameMatched
+    } else {
+        // If no title prefix, try to extract name before address keywords
+        const addressStartIdx = findAddressStart(remainingTxt);
+        if (addressStartIdx > 0) {
+            // Extract text before address start as potential name
+            const potentialName = remainingTxt.substring(0, addressStartIdx).trim();
+            
+            // Simple validation: should be 1-4 words and contain only Thai characters
+            const words = potentialName.split(/\s+/);
+            if (words.length >= 1 && words.length <= 4 && 
+                words.every(word => /^[ก-๙]+$/.test(word))) {
+                name = potentialName;
+            }
+        }
+    }
+    
+    remainingTxt = remainingTxt.replace(name, '').trim();
     remainingTxt = remainingTxt.replace('()', '').trim();
 
     const address = remainingTxt.replace(/\s+/g, ' ').trim();
