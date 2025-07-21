@@ -93,6 +93,36 @@ describe('Known Issue 1: แยกชื่อไม่ได้ถ้าไม�
             assert.equal(result.name, 'ดราก้อน ตันเด้อ');
         });
     });
+    describe('#phone', () => {
+        it('should be "0812345678"', () => {
+            assert.equal(result.phone, '0812345678');
+        });
+    });
+    describe('#address', () => {
+        it('should be "อาคารเอ ชั้น 10 ห้อง 3"', () => {
+            assert.equal(result.address, 'อาคารเอ ชั้น 10 ห้อง 3');
+        });
+    });
+    describe('#subdistrict', () => {
+        it('should be "สามเสนใน"', () => {
+            assert.equal(result.subdistrict, 'สามเสนใน');
+        });
+    });
+    describe('#district', () => {
+        it('should be "พญาไท"', () => {
+            assert.equal(result.district, 'พญาไท');
+        });
+    });
+    describe('#province', () => {
+        it('should be "กรุงเทพมหานคร"', () => {
+            assert.equal(result.province, 'กรุงเทพมหานคร');
+        });
+    });
+    describe('#zipcode', () => {
+        it('should be "10400"', () => {
+            assert.equal(result.zipcode, '10400');
+        });
+    });
 });
 
 describe('ชื่อที่คล้ายหรือเหมือนกับ ตำบล อำเภอ จังหวัด จะโดนตัดออก', () => {
