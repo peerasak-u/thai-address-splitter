@@ -21,16 +21,54 @@ const removePrefix = (text) => {
 }
 
 
+// Province abbreviations mapping
+const provinceAbbreviations = {
+    'กรุงเทพมหานคร': ['กรุงเทพ', 'กทม', 'กทม.'],
+    'นครราชสีมา': ['โคราช']
+};
+
+const removeLastOccurrence = (text, searchValue) => {
+    const lastIndex = text.lastIndexOf(searchValue);
+    if (lastIndex === -1) return text;
+    return text.slice(0, lastIndex) + text.slice(lastIndex + searchValue.length);
+};
+
+const removeProvinceAbbreviations = (text, fullProvinceName) => {
+    let result = text;
+    
+    // Get abbreviations for the full province name
+    const abbreviations = provinceAbbreviations[fullProvinceName];
+    if (!abbreviations) return result;
+    
+    // Remove each abbreviation that appears as a standalone word (not part of a name)
+    for (const abbrev of abbreviations) {
+        // Use word boundaries to avoid removing abbreviations that are part of names
+        // Look for abbreviation preceded by space and followed by space or end of string
+        const regexPattern = new RegExp(`\\s${abbrev}(?=\\s|$)`, 'g');
+        result = result.replace(regexPattern, '');
+        
+        // Also check if abbreviation starts the text
+        if (result.startsWith(abbrev + ' ')) {
+            result = result.slice(abbrev.length + 1);
+        }
+    }
+    
+    return result.trim();
+};
+
 const finalResult = (text, mainAddress) => {
     const namePattern = /(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|นางสาว|น\.ส\.|ดร\.|คุณ)([ก-๙]+\s[ก-๙]+(\sณ\s[ก-๙]+)?)/;
     const phonePattern = /(09|08|06)\d{1}(\d{7}|-\d{7}|-\d{3}-\d{4})/;
 
     let remainingTxt = text;
 
-    const keyPattern = Object.values(mainAddress);
-    keyPattern.forEach(key => {
-        remainingTxt = remainingTxt.replace(key, '').trim();
-    });
+    // Remove location words in order: zipcode, province, district, subdistrict (from most specific to least specific)
+    remainingTxt = removeLastOccurrence(remainingTxt, mainAddress.zipcode).trim();
+    remainingTxt = removeLastOccurrence(remainingTxt, mainAddress.province).trim();
+    // Also remove province abbreviations
+    remainingTxt = removeProvinceAbbreviations(remainingTxt, mainAddress.province).trim();
+    remainingTxt = removeLastOccurrence(remainingTxt, mainAddress.district).trim();
+    remainingTxt = removeLastOccurrence(remainingTxt, mainAddress.subdistrict).trim();
 
     const nameMatched = remainingTxt.match(namePattern);
     let name = '';

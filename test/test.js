@@ -95,34 +95,87 @@ describe('Known Issue 1: แยกชื่อไม่ได้ถ้าไม�
     });
 });
 
-describe('Known Issue 2: ชื่อที่คล้ายหรือเหมือนกับ ตำบล อำเภอ จังหวัด จะโดนตัดออก', () => {
+describe('ชื่อที่คล้ายหรือเหมือนกับ ตำบล อำเภอ จังหวัด จะโดนตัดออก', () => {
     const input4 = 'นายกรุงเทพ สามเสนใน 123/45 ถนนราชดำเนิน เขตพญาไท กรุงเทพมหานคร แขวงสามเสนใน 10400 เบอร์ 081-234-5678';
     const result = Splitter.split(input4);
 
     describe('#name', () => {
-        it('should preserve names that match location names (currently fails)', () => {
-            // This test documents the known issue - name "กรุงเทพ สามเสนใน" gets filtered out
+        it('should preserve names that match location names', () => {
+            // Fixed: algorithm now removes only last occurrence of location words
             assert.equal(result.name, 'นายกรุงเทพ สามเสนใน');
+        });
+    });
+    describe('#address', () => {
+        it('should be "123/45 ถนนราชดำเนิน"', () => {
+            assert.equal(result.address, '123/45 ถนนราชดำเนิน');
+        });
+    });
+    describe('#subdistrict', () => {
+        it('should be "สามเสนใน"', () => {
+            assert.equal(result.subdistrict, 'สามเสนใน');
+        });
+    });
+    describe('#district', () => {
+        it('should be "พญาไท"', () => {
+            assert.equal(result.district, 'พญาไท');
+        });
+    });
+    describe('#province', () => {
+        it('should be "กรุงเทพมหานคร"', () => {
+            assert.equal(result.province, 'กรุงเทพมหานคร');
+        });
+    });
+    describe('#zipcode', () => {
+        it('should be "10400"', () => {
+            assert.equal(result.zipcode, '10400');
         });
     });
 });
 
-describe('Known Issue 3: ชื่อย่อของจังหวัดจะถูกเก็บไว้ใน address', () => {
+describe('ชื่อย่อของจังหวัดจะถูกเก็บไว้ใน address', () => {
     const input5 = 'นายดราก้อน ตันเด้อ 123/45 ถนนราชดำเนิน พญาไท กรุงเทพ สามเสนใน 10400 เบอร์ 081-234-5678';
     const result = Splitter.split(input5);
 
     describe('#address', () => {
-        it('should not include abbreviated province names in address (currently fails)', () => {
-            // This test documents the known issue - "กรุงเทพ" gets included in address
-            // Expected: address should be "123/45 ถนนราชดำเนิน"
-            // Actual: address will include "กรุงเทพ"
+        it('should not include abbreviated province names in address', () => {
+            // Fixed: algorithm now removes province abbreviations like "กรุงเทพ"
             assert.equal(result.address, '123/45 ถนนราชดำเนิน');
+        });
+    });
+    
+    describe('#name', () => {
+        it('should be "นายดราก้อน ตันเด้อ"', () => {
+            assert.equal(result.name, 'นายดราก้อน ตันเด้อ');
+        });
+    });
+    
+    describe('#phone', () => {
+        it('should be "0812345678"', () => {
+            assert.equal(result.phone, '0812345678');
+        });
+    });
+    
+    describe('#subdistrict', () => {
+        it('should be "สามเสนใน"', () => {
+            assert.equal(result.subdistrict, 'สามเสนใน');
+        });
+    });
+    
+    describe('#district', () => {
+        it('should be "พญาไท"', () => {
+            assert.equal(result.district, 'พญาไท');
         });
     });
     
     describe('#province', () => {
         it('should still correctly identify full province name', () => {
             assert.equal(result.province, 'กรุงเทพมหานคร');
+        });
+    });
+    
+    describe('#zipcode', () => {
+        it('should be "10400"', () => {
+            assert.equal(result.zipcode, '10400');
         });
     });
 });
