@@ -1,194 +1,208 @@
-let subdistricts = require('./subdistricts.json')
+const subdistricts = require('./subdistricts.json');
 
-const split = (text) => {
-    try {
-        const cleanText = removePrefix(text);
-        let wordlist = cleanText.split(' ').filter(word => /[ก-๙]{2,}/.test(word));
-        wordlist = [...new Set(wordlist)];
-        const mainAddress = findSubdistrict(wordlist);
-        const result = finalResult(cleanText, mainAddress);
-        return result;
-    } catch (error) {
-        console.error(error);
+class Constants {
+    static TITLE_PREFIXES = /(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|นางสาว|น\.ส\.|ดร\.|คุณ)([ก-๙]+\s[ก-๙]+(\sณ\s[ก-๙]+)?)/;
+    static PHONE_PATTERN = /(09|08|06)\d{1}(\d{7}|-\d{7}|-\d{3}-\d{4})/;
+    static PREFIX_PATTERN = /(เขต|แขวง|จังหวัด|อำเภอ|ตำบล|อ\.|ต\.|จ\.|โทร\.?|เบอร์|ที่อยู่)/g;
+    static THAI_WORD_PATTERN = /[ก-๙]{2,}/;
+    static THAI_CHAR_PATTERN = /^[ก-๙]+$/;
+    
+    static ADDRESS_KEYWORDS = [
+        'อาคาร', 'ชั้น', 'ห้อง', 'ตึก', 'หมู่', 'บ้าน', 'ซอย', 'ถนน',
+        'ตลาด', 'คอนโด', 'คอนโดมิเนียม', 'อพาร์ทเม้นท์', 'หอพัก', 'โครงการ',
+        'เลขที่', 'บ้านเลขที่', 'หมู่บ้าน', 'ซ.', 'ถ.'
+    ];
+    
+    static PROVINCE_ABBREVIATIONS = {
+        'กรุงเทพมหานคร': ['กรุงเทพ', 'กทม', 'กทม.'],
+        'นครราชสีมา': ['โคราช']
+    };
+    
+    static get ADDRESS_START_PATTERN() {
+        return new RegExp(
+            `(^|\\s)(${this.ADDRESS_KEYWORDS.join('|')}|\\d+/\\d+|\\d+\\s*หมู่\\s*\\d+|\\d+\\s+ถนน)`,
+            'i'
+        );
     }
-};
-
-const removePrefix = (text) => {
-    const prefixPattern = /(เขต|แขวง|จังหวัด|อำเภอ|ตำบล|อ\.|ต\.|จ\.|โทร\.?|เบอร์|ที่อยู่)/g;
-    let string = text.replace(/\s+/g, ' ');
-    string = string.replace(prefixPattern, '');
-    return string;
 }
 
-
-// Province abbreviations mapping
-const provinceAbbreviations = {
-    'กรุงเทพมหานคร': ['กรุงเทพ', 'กทม', 'กทม.'],
-    'นครราชสีมา': ['โคราช']
-};
-
-const removeLastOccurrence = (text, searchValue) => {
-    const lastIndex = text.lastIndexOf(searchValue);
-    if (lastIndex === -1) return text;
-    return text.slice(0, lastIndex) + text.slice(lastIndex + searchValue.length);
-};
-
-// Common Thai address keywords that indicate start of address
-const addressKeywords = [
-    'อาคาร', 'ชั้น', 'ห้อง', 'ตึก', 'หมู่', 'บ้าน', 'ซอย', 'ถนน',
-    'ตลาด', 'คอนโด', 'คอนโดมิเนียม', 'อพาร์ทเม้นท์', 'หอพัก', 'โครงการ',
-    'เลขที่', 'บ้านเลขที่', 'หมู่บ้าน', 'ซ.', 'ถ.'
-];
-
-// Pattern to detect address components
-const addressStartPattern = new RegExp(
-    `(^|\\s)(${addressKeywords.join('|')}|\\d+/\\d+|\\d+\\s*หมู่\\s*\\d+|\\d+\\s+ถนน)`,
-    'i'
-);
-
-// Helper function to find where address starts in text
-const findAddressStart = (text) => {
-    const match = text.match(addressStartPattern);
-    if (match) {
-        // If match starts with whitespace, adjust index to after the whitespace
-        return match.index + (match[0].startsWith(' ') ? 1 : 0);
+class TextPreprocessor {
+    static preprocessText(text) {
+        let normalizedText = text.replace(/\s+/g, ' ');
+        normalizedText = normalizedText.replace(Constants.PREFIX_PATTERN, '');
+        return normalizedText;
     }
-    return -1;
-};
-
-const removeProvinceAbbreviations = (text, fullProvinceName) => {
-    let result = text;
     
-    // Get abbreviations for the full province name
-    const abbreviations = provinceAbbreviations[fullProvinceName];
-    if (!abbreviations) return result;
+    static extractWordList(text) {
+        const words = text.split(' ').filter(word => Constants.THAI_WORD_PATTERN.test(word));
+        return [...new Set(words)];
+    }
     
-    // Remove each abbreviation that appears as a standalone word (not part of a name)
-    for (const abbrev of abbreviations) {
-        // Use word boundaries to avoid removing abbreviations that are part of names
-        // Look for abbreviation preceded by space and followed by space or end of string
-        const regexPattern = new RegExp(`\\s${abbrev}(?=\\s|$)`, 'g');
-        result = result.replace(regexPattern, '');
+    static removeLastOccurrence(text, searchValue) {
+        const lastIndex = text.lastIndexOf(searchValue);
+        if (lastIndex === -1) return text;
+        return text.slice(0, lastIndex) + text.slice(lastIndex + searchValue.length);
+    }
+    
+    static removeProvinceAbbreviations(text, fullProvinceName) {
+        let result = text;
+        const abbreviations = Constants.PROVINCE_ABBREVIATIONS[fullProvinceName];
+        if (!abbreviations) return result;
         
-        // Also check if abbreviation starts the text
-        if (result.startsWith(abbrev + ' ')) {
-            result = result.slice(abbrev.length + 1);
-        }
-    }
-    
-    return result.trim();
-};
-
-const finalResult = (text, mainAddress) => {
-    const namePattern = /(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|นางสาว|น\.ส\.|ดร\.|คุณ)([ก-๙]+\s[ก-๙]+(\sณ\s[ก-๙]+)?)/;
-    const phonePattern = /(09|08|06)\d{1}(\d{7}|-\d{7}|-\d{3}-\d{4})/;
-
-    let remainingTxt = text;
-
-    // Remove location words in order: zipcode, province, district, subdistrict (from most specific to least specific)
-    remainingTxt = removeLastOccurrence(remainingTxt, mainAddress.zipcode).trim();
-    remainingTxt = removeLastOccurrence(remainingTxt, mainAddress.province).trim();
-    // Also remove province abbreviations
-    remainingTxt = removeProvinceAbbreviations(remainingTxt, mainAddress.province).trim();
-    remainingTxt = removeLastOccurrence(remainingTxt, mainAddress.district).trim();
-    remainingTxt = removeLastOccurrence(remainingTxt, mainAddress.subdistrict).trim();
-
-    // Extract phone first to simplify name extraction
-    const phoneMatched = remainingTxt.match(phonePattern);
-    let phone = '';
-    if (phoneMatched) {
-        [phone] = phoneMatched
-    }
-    remainingTxt = remainingTxt.replace(phone, '').trim();
-    phone = phone.replace(/-/g, '');
-
-    // Try to extract name with title prefix first
-    const nameMatched = remainingTxt.match(namePattern);
-    let name = '';
-    if (nameMatched) {
-        [name] = nameMatched
-    } else {
-        // If no title prefix, try to extract name before address keywords
-        const addressStartIdx = findAddressStart(remainingTxt);
-        if (addressStartIdx > 0) {
-            // Extract text before address start as potential name
-            const potentialName = remainingTxt.substring(0, addressStartIdx).trim();
+        for (const abbrev of abbreviations) {
+            const regexPattern = new RegExp(`\\s${abbrev}(?=\\s|$)`, 'g');
+            result = result.replace(regexPattern, '');
             
-            // Simple validation: should be 1-4 words and contain only Thai characters
-            const words = potentialName.split(/\s+/);
-            if (words.length >= 1 && words.length <= 4 && 
-                words.every(word => /^[ก-๙]+$/.test(word))) {
-                name = potentialName;
+            if (result.startsWith(abbrev + ' ')) {
+                result = result.slice(abbrev.length + 1);
             }
         }
+        
+        return result.trim();
     }
     
-    remainingTxt = remainingTxt.replace(name, '').trim();
-    remainingTxt = remainingTxt.replace('()', '').trim();
-
-    const address = remainingTxt.replace(/\s+/g, ' ').trim();
-
-    return {
-        name,
-        phone,
-        address,
-        ...mainAddress
+    static findAddressStart(text) {
+        const match = text.match(Constants.ADDRESS_START_PATTERN);
+        if (match) {
+            return match.index + (match[0].startsWith(' ') ? 1 : 0);
+        }
+        return -1;
     }
-
 }
 
-const findSubdistrict = (wordlist) => {
-    let results = [];
-
-    for (let word of wordlist) {
-        const filtered = subdistricts.filter(item => {
-            return item.name.includes(word)
+class LocationMatcher {
+    static findBestLocationMatch(wordList) {
+        let matchedLocations = [];
+        
+        for (const word of wordList) {
+            const filteredLocations = subdistricts.filter(item => {
+                return item.name.includes(word);
+            });
+            matchedLocations = matchedLocations.concat(filteredLocations);
+        }
+        
+        const bestMatch = this.calculateLocationScores(matchedLocations);
+        const locationParts = bestMatch.name.split(', ');
+        
+        return {
+            subdistrict: locationParts[0],
+            district: TextPreprocessor.preprocessText(locationParts[1]),
+            province: TextPreprocessor.preprocessText(locationParts[2]),
+            zipcode: locationParts[3]
+        };
+    }
+    
+    static calculateLocationScores(filteredLocations) {
+        const scoreMap = {};
+        const results = [];
+        
+        filteredLocations.reduce((accumulator, location) => {
+            if (!accumulator[location.name]) {
+                accumulator[location.name] = {
+                    count: 0,
+                    name: location.name
+                };
+                results.push(accumulator[location.name]);
+            }
+            accumulator[location.name].count += 1;
+            return accumulator;
+        }, scoreMap);
+        
+        const sortedResults = results.sort((a, b) => {
+            if (a.count > b.count) return -1;
+            if (a.count < b.count) return 1;
+            return 0;
         });
-        results = results.concat(filtered);
+        
+        const bestMatch = sortedResults[0];
+        if (bestMatch.count === 1) {
+            throw new Error('No Match Found');
+        }
+        
+        return bestMatch;
     }
-
-    const bestMatched = findBestMatched(results).name.split(', ');
-
-    return {
-        subdistrict: bestMatched[0],
-        district: removePrefix(bestMatched[1]),
-        province: removePrefix(bestMatched[2]),
-        zipcode: bestMatched[3]
-    };
-};
-
-const findBestMatched = (filtered) => {
-    let results = [];
-
-    filtered.reduce((res, value) => {
-        if (!res[value.name]) {
-            res[value.name] = {
-                count: 0,
-                name: value.name
-            };
-            results.push(res[value.name])
-        }
-        res[value.name].count += 1
-        return res;
-    }, {});
-
-    const firstMatch = results.sort((a, b) => {
-        if (a.count > b.count) {
-            return -1;
-        }
-        if (a.count > b.count) {
-            return 1;
-        }
-        return 0;
-    })[0];
-
-    if (firstMatch.count === 1) {
-        throw new Error('No Match Found');
-    }
-
-    return firstMatch;
 }
+
+class EntityExtractor {
+    static extractEntitiesFromText(text, locationData) {
+        let remainingText = text;
+        
+        remainingText = this.removeLocationWords(remainingText, locationData);
+        const phone = this.extractPhone(remainingText);
+        remainingText = remainingText.replace(phone, '').trim();
+        const name = this.extractName(remainingText);
+        remainingText = remainingText.replace(name, '').trim();
+        const address = this.cleanAddress(remainingText);
+        
+        return {
+            name,
+            phone: phone.replace(/-/g, ''),
+            address,
+            ...locationData
+        };
+    }
+    
+    static removeLocationWords(text, locationData) {
+        let result = text;
+        
+        result = TextPreprocessor.removeLastOccurrence(result, locationData.zipcode).trim();
+        result = TextPreprocessor.removeLastOccurrence(result, locationData.province).trim();
+        result = TextPreprocessor.removeProvinceAbbreviations(result, locationData.province).trim();
+        result = TextPreprocessor.removeLastOccurrence(result, locationData.district).trim();
+        result = TextPreprocessor.removeLastOccurrence(result, locationData.subdistrict).trim();
+        
+        return result;
+    }
+    
+    static extractPhone(text) {
+        const phoneMatch = text.match(Constants.PHONE_PATTERN);
+        return phoneMatch ? phoneMatch[0] : '';
+    }
+    
+    static extractName(text) {
+        const nameWithTitleMatch = text.match(Constants.TITLE_PREFIXES);
+        if (nameWithTitleMatch) {
+            return nameWithTitleMatch[0];
+        }
+        
+        const addressStartIndex = TextPreprocessor.findAddressStart(text);
+        if (addressStartIndex > 0) {
+            const potentialName = text.substring(0, addressStartIndex).trim();
+            const words = potentialName.split(/\s+/);
+            
+            if (words.length >= 1 && words.length <= 4 && 
+                words.every(word => Constants.THAI_CHAR_PATTERN.test(word))) {
+                return potentialName;
+            }
+        }
+        
+        return '';
+    }
+    
+    static cleanAddress(text) {
+        return text.replace('()', '').replace(/\s+/g, ' ').trim();
+    }
+}
+
+class ThaiAddressSplitter {
+    static split(text) {
+        try {
+            const cleanText = TextPreprocessor.preprocessText(text);
+            const wordList = TextPreprocessor.extractWordList(cleanText);
+            const locationData = LocationMatcher.findBestLocationMatch(wordList);
+            const result = EntityExtractor.extractEntitiesFromText(cleanText, locationData);
+            return result;
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    }
+}
+
+const split = (text) => {
+    return ThaiAddressSplitter.split(text);
+};
 
 module.exports = {
     split
-}
+};
