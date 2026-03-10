@@ -1,8 +1,8 @@
 const subdistricts = require('./subdistricts.json');
 
 class Constants {
-    static TITLE_PREFIXES = /(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|นางสาว|น\.ส\.|ดร\.|คุณ)([ก-๙]+\s[ก-๙]+(\sณ\s[ก-๙]+)?)/;
-    static PHONE_PATTERN = /(09|08|06)\d{1}(\d{7}|-\d{7}|-\d{3}-\d{4})/;
+    static TITLE_PREFIXES = /(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|นางสาว|น\.ส\.|ดร\.|คุณ|พลเอก|พลโท|พลตรี|พลตำรวจ|ดาบตำรวจ|พระ|สามเณร|อาจารย์|ศาสตราจารย์)([ก-๙]+\s[ก-๙]+(\sณ\s[ก-๙]+)?)/;
+    static PHONE_PATTERN = /(?:\+66[-\s]?|0066[-\s]?)?(?:0)?([689]\d[-\s]?\d{3}[-\s]?\d{4}|0[2-9][-\s]?\d{3}[-\s]?\d{4}|0[2-9]\d[-\s]?\d{3}[-\s]?\d{3,4}|[689]\d{8}|0[2-9]\d{6,7})/;
     static PREFIX_PATTERN = /(เขต|แขวง|จังหวัด|อำเภอ|ตำบล|อ\.|ต\.|จ\.|โทร\.?|เบอร์|ที่อยู่)/g;
     static THAI_WORD_PATTERN = /[ก-๙]{2,}/;
     static THAI_CHAR_PATTERN = /^[ก-๙]+$/;
@@ -128,8 +128,10 @@ class EntityExtractor {
         let remainingText = text;
         
         remainingText = this.removeLocationWords(remainingText, locationData);
+        const phoneMatch = remainingText.match(Constants.PHONE_PATTERN);
+        const phoneRaw = phoneMatch ? phoneMatch[0] : '';
         const phone = this.extractPhone(remainingText);
-        remainingText = remainingText.replace(phone, '').trim();
+        remainingText = remainingText.replace(phoneRaw, '').trim();
         const name = this.extractName(remainingText);
         remainingText = remainingText.replace(name, '').trim();
         const address = this.cleanAddress(remainingText);
@@ -155,8 +157,22 @@ class EntityExtractor {
     }
     
     static extractPhone(text) {
+        // First try to match international format (+66 or 0066)
+        const intlMatch = text.match(/(\+66|0066)[-\s]?\d{1,2}[-\s]?\d{3,4}[-\s]?\d{3,4}/);
+        if (intlMatch) {
+            let phone = intlMatch[0];
+            phone = phone.replace(/\D/g, '');
+            if (phone.startsWith('66')) {
+                return phone;
+            }
+            return phone;
+        }
+        
+        // Then try landline/mobile patterns
         const phoneMatch = text.match(Constants.PHONE_PATTERN);
-        return phoneMatch ? phoneMatch[0] : '';
+        if (!phoneMatch) return '';
+        
+        return phoneMatch[0].replace(/\D/g, '');
     }
     
     static extractName(text) {
